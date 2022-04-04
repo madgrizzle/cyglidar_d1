@@ -1,14 +1,27 @@
 #ifndef CYGLIDAR_H
 #define CYGLIDAR_H
 
-#include <ros/ros.h>
+//#include <ros/ros.h>
+#include "rclcpp/rclcpp.hpp"
 #include <CygbotParser.h>
 #include <pcl_conversions/pcl_conversions.h>
-#include <pcl_ros/transforms.h>
-#include <pcl_ros/point_cloud.h>
-#include <sensor_msgs/PointCloud2.h>
-#include <sensor_msgs/LaserScan.h>
-#include <std_msgs/UInt16.h>
+//#include <pcl_ros/transforms.hpp>
+//#include <pcl_ros/point_cloud.hpp>
+//#include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/msg/point_cloud2.hpp>
+//#include <sensor_msgs/LaserScan.h>
+#include <sensor_msgs/msg/laser_scan.hpp>
+//#include <std_msgs/UInt16.h>
+#include <std_msgs/msg/u_int16.hpp>
+
+
+#include <rcutils/logging_macros.h>
+
+#define ROS_WARN RCUTILS_LOG_WARN
+#define ROS_ERROR RCUTILS_LOG_ERROR
+#define ROS_INFO RCUTILS_LOG_INFO
+
+
 #include <boost/asio.hpp>
 #include <cmath>
 #include <thread>
