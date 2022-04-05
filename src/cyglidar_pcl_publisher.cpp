@@ -79,8 +79,7 @@ bool drawing = false;
 float tempX_2D, tempY_2D;
 void cloudScatter_2D(rclcpp::Time start, rclcpp::Time end, const double ANGLE_STEP_2D)
 {
-    //if (!drawing)
-    if (true)
+    if (!drawing)
     {
         // Make the drawing state TRUE so that it's not interrupted while drawing
         drawing = true;
@@ -162,8 +161,7 @@ void cloudScatter_2D(rclcpp::Time start, rclcpp::Time end, const double ANGLE_ST
 
 void cloudScatter_3D()
 {
-    //if (!drawing)
-    if (true)
+    if (!drawing)
     {
         // Make the drawing state TRUE so that it's not interrupted while drawing
         drawing = true;
@@ -349,12 +347,10 @@ void running()
 
         // Send packets
         laser.packet_run(LiDAR_RunMode);
-        //rclcpp::Duration(1.0).sleep();         // sleep for a sec, by the duration
         rclcpp::Rate r(std::chrono::seconds(1));
-        r.sleep();
+        r.sleep();  // sleep for a second
         laser.packet_frequency(FREQUENCY_LEVEL);
-        //rclcpp::Duration(1.0).sleep();
-        r.sleep();
+        r.sleep();  // sleep for a second
         laser.packet_duration(LiDAR_RunMode, setAutoDuration, PULSE_DURATION);
 
         // Create variables used to organize data before drawing
@@ -362,7 +358,7 @@ void running()
         double ANGLE_STEP_2D;
 
         // Keep receiving data unless the process is dead
-        ROS_INFO("here");
+        ROS_INFO("entering service loop");
         while (rclcpp::ok())
         {
             // Only allowed in case of not using the working array called bufferPtr
@@ -405,14 +401,11 @@ void running()
                                     {
                                         last_time_laser = node->now();
                                         bufferPtr_2D = &bufferPtr[0];
-                                        if (!drawing){
-                                            sensor_msgs::msg::PointCloud2 pc2_msg_2d_;
-                                            cloudScatter_2D(current_time_laser, last_time_laser, ANGLE_STEP_2D);
-                                            pcl::toROSMsg(*scan_2D, pc2_msg_2d_);
-                                            pub_2D->publish(pc2_msg_2d_);
-                                            pub_scan->publish(*scan_laser);
-                                        }
-                                            
+                                        sensor_msgs::msg::PointCloud2 pc2_msg_2d_;
+                                        cloudScatter_2D(current_time_laser, last_time_laser, ANGLE_STEP_2D);
+                                        pcl::toROSMsg(*scan_2D, pc2_msg_2d_);
+                                        pub_2D->publish(pc2_msg_2d_);
+                                        pub_scan->publish(*scan_laser);
                                     }
                                     break;
                                 case 0x08: // 3D
@@ -440,13 +433,10 @@ void running()
                                                 memcpy(bufferPtr02, bufferPtr + PAYLOAD_SIZE, sizeof(uint8_t) * DATABUFFER_SIZE_3D);
                                                 break;
                                         }
-                                        if (!drawing){
-                                            sensor_msgs::msg::PointCloud2 pc2_msg_3d_;
-                                            cloudScatter_3D();
-                                            pcl::toROSMsg(*scan_3D, pc2_msg_3d_);
-                                            pub_3D->publish(pc2_msg_3d_);
-                                        }
-                                        //cloudScatter_3D();
+                                        cloudScatter_3D();
+                                        sensor_msgs::msg::PointCloud2 pc2_msg_3d_;
+                                        pcl::toROSMsg(*scan_3D, pc2_msg_3d_);
+                                        pub_3D->publish(pc2_msg_3d_);
                                     }
                                     break;
                                 }
