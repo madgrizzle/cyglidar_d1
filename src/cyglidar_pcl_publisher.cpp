@@ -90,7 +90,7 @@ bool drawing = false;
 int distanceCnt_2D;
 float point_angle_var_2D, point_angle_2D;
 float tempX_2D, tempY_2D;
-uint8_t cloudScatter_2D(ros::Time start, ros::Time end)
+void cloudScatter_2D(ros::Time start, ros::Time end)
 {
     if (!drawing)
     {
@@ -173,7 +173,7 @@ float tempX_3D, tempY_3D, tempD_3D;
 float x_3D, y_3D, h_3D, fh_3D, dRatio_3D, aRatio_3D, focalRatio_3D, tanA1_3D, tanA2_3D;
 float verticalA, horizontalA, verticalA_Single, horizontalA_Half, originalA_H, originalA_V, differenceA_H, differenceA_V;
 uint32_t rgb_3D;
-uint8_t cloudScatter_3D()
+void cloudScatter_3D()
 {
     if (!drawing)
     {
@@ -300,7 +300,7 @@ void running()
 
     colorBuffer();
 
-    pub_scan = nh.advertise<sensor_msgs::LaserScan>("scan_laser", SIZE_MAX);
+    pub_scan = nh.advertise<sensor_msgs::LaserScan>("scan_laser", SCAN_MAX_SIZE);
     pub_2D = nh.advertise<sensor_msgs::PointCloud2>("scan_2D", 1);
     pub_3D = nh.advertise<sensor_msgs::PointCloud2>("scan_3D", 1);
     scan_2D = pcl::PointCloud<pcl::PointXYZRGBA>::Ptr(new pcl::PointCloud<pcl::PointXYZRGBA>);
@@ -331,7 +331,7 @@ void running()
     currentBuffer = 0x00;
     drawing = false;
 
-    bufferPtr = new uint8_t[SIZE_MAX];
+    bufferPtr = new uint8_t[SCAN_MAX_SIZE];
     uint8_t* result;
     uint8_t parser, inProgress = 0x00;
 	int bytes_transferred;
@@ -362,7 +362,7 @@ void running()
 				inProgress = 0x01;
 
                 result = laser.poll(VERSION_NUM);               
-                bytes_transferred = (int)(result[SIZE_MAX] << 8 | result[SIZE_MAX + 1]);
+                bytes_transferred = (int)(result[SCAN_MAX_SIZE] << 8 | result[SCAN_MAX_SIZE + 1]);
 
                 if (bytes_transferred > 0)
                 {
@@ -462,7 +462,7 @@ void running()
         }
         laser.close();
     }
-    catch (boost::system::system_error ex)
+    catch (const boost::system::system_error ex)
     {
         ROS_ERROR("[Error] instantiating laser object. \
         Are you sure you have the correct port and baud rate? \

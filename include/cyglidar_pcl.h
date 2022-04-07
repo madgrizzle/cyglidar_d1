@@ -22,7 +22,7 @@
 #define BASE_ANGLE_2D           120
 
 #define DISTANCE_MAX_2D         10000
-#define SIZE_MAX                20000
+#define SCAN_MAX_SIZE                20000
 
 #define TRACKING_VALUE_3D       4001
 #define SATURATION_VALUE_3D     4083
@@ -62,16 +62,7 @@
 #define HEX_SIZE_TWO            8
 #define HEX_SIZE_FOUR           16
 
-static boost::array<uint8_t, 8> PACKET_START_2D = { PACKET_HEADER_0, PACKET_HEADER_1, PACKET_HEADER_2, 0x02, 0x00, 0x01, 0x00, 0x03 };
-static boost::array<uint8_t, 8> PACKET_START_3D = { PACKET_HEADER_0, PACKET_HEADER_1, PACKET_HEADER_2, 0x02, 0x00, 0x08, 0x00, 0x0A };
-static boost::array<uint8_t, 8> PACKET_START_DUAL = { PACKET_HEADER_0, PACKET_HEADER_1, PACKET_HEADER_2, 0x02, 0x00, 0x07, 0x00, 0x05 };
-static boost::array<uint8_t, 8> PACKET_STOP = { PACKET_HEADER_0, PACKET_HEADER_1, PACKET_HEADER_2, 0x02, 0x00, 0x02, 0x00, 0x00 };
 
-static boost::array<uint8_t, 8> PACKET_FREQUENCY = { PACKET_HEADER_0, PACKET_HEADER_1, PACKET_HEADER_2, 0x02, 0x00, 0x0F, 0x00, 0x00 };
-static boost::array<uint8_t, 9> PACKET_INTEGRATION_TIME = { PACKET_HEADER_0, PACKET_HEADER_1, PACKET_HEADER_2, 0x03, 0x00, 0x0C, 0x00, 0x00, 0x00 };
-
-static boost::array<char, HEX_SIZE_TWO> MSB_BUFFER, LSB_BUFFER;
-static boost::array<char, HEX_SIZE_FOUR> BINARY_BUFFER;
 
 namespace cyglidar_pcl_driver {
 class cyglidar_pcl
