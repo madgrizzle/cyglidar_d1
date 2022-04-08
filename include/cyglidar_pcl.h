@@ -1,14 +1,17 @@
 #ifndef CYGLIDAR_H
 #define CYGLIDAR_H
 
-#include <ros/ros.h>
+#include "rclcpp/rclcpp.hpp"
 #include <CygbotParser.h>
 #include <pcl_conversions/pcl_conversions.h>
-#include <pcl_ros/transforms.h>
-#include <pcl_ros/point_cloud.h>
-#include <sensor_msgs/PointCloud2.h>
-#include <sensor_msgs/LaserScan.h>
-#include <std_msgs/UInt16.h>
+#include <sensor_msgs/msg/point_cloud2.hpp>
+#include <sensor_msgs/msg/laser_scan.hpp>
+#include <std_msgs/msg/u_int16.hpp>
+
+
+#define ROS_WARN RCUTILS_LOG_WARN
+#define ROS_ERROR RCUTILS_LOG_ERROR
+#define ROS_INFO RCUTILS_LOG_INFO
 #include <boost/asio.hpp>
 #include <cmath>
 #include <thread>
@@ -22,7 +25,7 @@
 #define BASE_ANGLE_2D           120
 
 #define DISTANCE_MAX_2D         10000
-#define SIZE_MAX                20000
+#define SCAN_MAX_SIZE           20000
 
 #define INVALID_DATA_2D         16000
 #define LOW_AMPLITUDE_2D        16001
@@ -78,16 +81,6 @@
 #define HEX_SIZE_TWO            8
 #define HEX_SIZE_FOUR           16
 
-static boost::array<uint8_t, 8> PACKET_START_2D = { PACKET_HEADER_0, PACKET_HEADER_1, PACKET_HEADER_2, 0x02, 0x00, 0x01, 0x00, 0x03 };
-static boost::array<uint8_t, 8> PACKET_START_3D = { PACKET_HEADER_0, PACKET_HEADER_1, PACKET_HEADER_2, 0x02, 0x00, 0x08, 0x00, 0x0A };
-static boost::array<uint8_t, 8> PACKET_START_DUAL = { PACKET_HEADER_0, PACKET_HEADER_1, PACKET_HEADER_2, 0x02, 0x00, 0x07, 0x00, 0x05 };
-static boost::array<uint8_t, 8> PACKET_STOP = { PACKET_HEADER_0, PACKET_HEADER_1, PACKET_HEADER_2, 0x02, 0x00, 0x02, 0x00, 0x00 };
-
-static boost::array<uint8_t, 8> PACKET_FREQUENCY = { PACKET_HEADER_0, PACKET_HEADER_1, PACKET_HEADER_2, 0x02, 0x00, 0x0F, 0x00, 0x00 };
-static boost::array<uint8_t, 9> PACKET_INTEGRATION_TIME = { PACKET_HEADER_0, PACKET_HEADER_1, PACKET_HEADER_2, 0x03, 0x00, 0x0C, 0x00, 0x00, 0x00 };
-
-static boost::array<char, HEX_SIZE_TWO> MSB_BUFFER, LSB_BUFFER;
-static boost::array<char, HEX_SIZE_FOUR> BINARY_BUFFER;
 
 namespace cyglidar_pcl_driver {
 class cyglidar_pcl
