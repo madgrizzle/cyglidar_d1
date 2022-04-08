@@ -48,7 +48,7 @@ def generate_launch_description():
     
     tf_node = launch_ros.actions.Node(
         package = 'tf2_ros', executable = "static_transform_publisher", name="to_laserlink",
-        arguments = ["0", "0", "0", "0", "0", "0", "1", "map", "laser_link"]
+        arguments = ["0", "0", "0", "0", "-0.25", "0", "map", "laser_link"]
     )
 
     ld.add_action(version_arg)

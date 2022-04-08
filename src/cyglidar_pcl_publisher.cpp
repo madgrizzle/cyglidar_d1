@@ -2,6 +2,8 @@
 #include "PointCloudMaker.h"
 #include "Constants_CygLiDAR_D1.h"
 #include <chrono>
+#include <tf2/LinearMath/Quaternion.h>
+
 
 int RunMode;        // select run mode {2D(0), 3D(1), Dual(2)}
 int setAutoDuration; // select Auto (1) or Fixed(0)
@@ -238,8 +240,6 @@ int FREQUENCY_LEVEL, PULSE_DURATION;
 void running()
 {
     // Create node handlers and local variables
-    //ros::NodeHandle nh;
-    //ros::NodeHandle priv_nh("~");
     node = rclcpp::Node::make_shared("line_laser");
 
     node->declare_parameter("port", std::string("/dev/ttyUSB0"));
@@ -472,6 +472,7 @@ int main(int argc, char **argv)
 {
     // Initialize ROS
     //ros::init(argc, argv, "line_laser");
+    rclcpp::shutdown();
     rclcpp::init(argc, argv);
 
     std::thread first(running);
