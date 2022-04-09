@@ -269,12 +269,12 @@ void running()
     rclcpp::Parameter setAutoDuration_param = node->get_parameter("set_auto_duration");
     rclcpp::Parameter PULSE_DURATION_param = node->get_parameter("duration");
 
-    std::string port;
-    int baud_rate;
-    std::string frame_id;
-    int RunMode = RunMode_param.as_int();
+    std::string port = port_param.as_string();
+    int baud_rate = baud_rate_param.as_int();
+    std::string frame_id = frame_id_param.as_string();
+    VERSION_NUM = RunMode_param.as_int();
     int FREQUENCY_LEVEL = FREQUENCY_LEVEL_param.as_int();
-    int setAutoDuration = setAutoDuration_param.as_int();
+    PULSE_CONTROL = setAutoDuration_param.as_int();
     int PULSE_DURATION = PULSE_DURATION_param.as_int();  
 
 
@@ -340,7 +340,7 @@ void running()
 
         int DATA_1 = 4, DATA_2 = 3;
         double ANGLE_STEP_2D, ANGLE_POINT_2D;
-
+        ROS_INFO("Hello");
         while (rclcpp::ok())
         {
             if (inProgress == 0x00)
@@ -437,6 +437,7 @@ void running()
                                         sensor_msgs::msg::PointCloud2 pc2_msg_3d_;
                                         pcl::toROSMsg(*scan_3D, pc2_msg_3d_);
                                         pub_3D->publish(pc2_msg_3d_);
+                                        //ROS_INFO("pubed 3d");
                                 }
                                 break;
                             case 0x00: // passed through header 1
@@ -447,10 +448,15 @@ void running()
                         }
                     }
                 }
+                else
+                {
+                    ROS_INFO("no bytes");
+                }
 
 				inProgress = 0x00;
             }
         }
+        ROS_INFO("closing");
         laser.close();
         delete bufferPtr01;
         delete bufferPtr02;

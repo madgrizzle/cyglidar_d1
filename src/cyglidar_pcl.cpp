@@ -168,23 +168,23 @@ namespace
 	boost::system::error_code errorCode;
 	int dataCnt = 0;
 
-	//uint8_t *raw_bytes = new uint8_t[SIZE_MAX + 2];
-	boost::array<uint8_t, SIZE_MAX + 2> raw_bytes;
+	//uint8_t *raw_bytes = new uint8_t[SCAN_MAX_SIZE + 2];
+	boost::array<uint8_t, SCAN_MAX_SIZE + 2> raw_bytes;
 
     uint8_t* cyglidar_pcl::poll(int version)
     {
-        //dataCnt = serial_.read_some(boost::asio::buffer(raw_bytes, SIZE_MAX + 2), errorCode);
+        //dataCnt = serial_.read_some(boost::asio::buffer(raw_bytes, SCAN_MAX_SIZE + 2), errorCode);
         dataCnt = boost::asio::read(serial_, boost::asio::buffer(raw_bytes), boost::asio::transfer_at_least(1), errorCode);
 
 		if (errorCode)
 		{
-			raw_bytes[SIZE_MAX] = 0x00; // MSB
-			raw_bytes[SIZE_MAX + 1] = 0x00; // LSB
+			raw_bytes[SCAN_MAX_SIZE] = 0x00; // MSB
+			raw_bytes[SCAN_MAX_SIZE + 1] = 0x00; // LSB
 		}
 		else
 		{
-			raw_bytes[SIZE_MAX] = (dataCnt) >> 8; // MSB
-			raw_bytes[SIZE_MAX + 1] = (dataCnt) & 0x00ff; // LSB
+			raw_bytes[SCAN_MAX_SIZE] = (dataCnt) >> 8; // MSB
+			raw_bytes[SCAN_MAX_SIZE + 1] = (dataCnt) & 0x00ff; // LSB
 		}
 
 		return &raw_bytes[0];
@@ -192,7 +192,7 @@ namespace
 		boost::asio::read(serial_, boost::asio::buffer(&raw_data[0], 1));
 		return &raw_data[0];*/
 
-		//ROS_INFO("DATA COUNT: %d => %x, %x", dataCnt, raw_bytes[SIZE_MAX], raw_bytes[SIZE_MAX + 1]);
+		//ROS_INFO("DATA COUNT: %d => %x, %x", dataCnt, raw_bytes[SCAN_MAX_SIZE], raw_bytes[SCAN_MAX_SIZE + 1]);
     }
 
     void cyglidar_pcl::packet_run(int version)
