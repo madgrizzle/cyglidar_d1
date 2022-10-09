@@ -1,9 +1,6 @@
 #include <cyglidar_pcl.h>
 #include "PointCloudMaker.h"
 #include "Constants_CygLiDAR_D1.h"
-#include <chrono>
-#include <tf2/LinearMath/Quaternion.h>
-
 
 int RunMode;        // select run mode {2D(0), 3D(1), Dual(2)}
 int setAutoDuration; // select Auto (1) or Fixed(0)
@@ -12,14 +9,8 @@ int DATABUFFER_SIZE_2D, DATABUFFER_SIZE_3D, DATASET_SIZE_2D, DATASET_SIZE_3D;
 typedef pcl::PointCloud<pcl::PointXYZRGBA> PointXYZRGBA;
 pcl::PointCloud<pcl::PointXYZRGBA>::Ptr scan_2D;
 pcl::PointCloud<pcl::PointXYZRGBA>::Ptr scan_3D;
-sensor_msgs::msg::LaserScan::Ptr scan_laser;
-//ros::Publisher pub_2D, pub_3D, pub_scan;
-
-rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_3D;
-rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_2D;
-rclcpp::Publisher<sensor_msgs::msg::LaserScan>::SharedPtr pub_scan;
-
-rclcpp::Node::SharedPtr node;
+sensor_msgs::LaserScan::Ptr scan_laser;
+ros::Publisher pub_2D, pub_3D, pub_scan;
 
 // 3D point cloud 
 uint16_t DistanceBuffer[CygLiDARD1::Sensor::numPixel];
@@ -79,7 +70,7 @@ void colorBuffer()
 
 bool drawing = false;
 float tempX_2D, tempY_2D;
-void cloudScatter_2D(rclcpp::Time start, rclcpp::Time end, const double ANGLE_STEP_2D)
+void cloudScatter_2D(ros::Time start, ros::Time end, const double ANGLE_STEP_2D)
 {
     if (!drawing)
     {
@@ -103,7 +94,7 @@ void cloudScatter_2D(rclcpp::Time start, rclcpp::Time end, const double ANGLE_ST
         }
 
         // Update values of LaserScan
-        double scan_duration = (start - end).seconds() * 1e-3;
+        double scan_duration = (start - end).toSec() * 1e-3;
 
         scan_laser->header.stamp = start;
         scan_laser->scan_time = scan_duration;
@@ -155,9 +146,14 @@ void cloudScatter_2D(rclcpp::Time start, rclcpp::Time end, const double ANGLE_ST
             }
         }
 
-        pcl_conversions::toPCL(node->now(), scan_2D->header.stamp);
-        drawing = false;
+        // Publish messages on both topics
+        pcl_conversions::toPCL(ros::Time::now(), scan_2D->header.stamp);
+        pub_2D.publish(scan_2D);
+
+        pub_scan.publish(scan_laser);
+
         // Allow the latest dataset to enter in this constructor
+        drawing = false;
     }
 }
 
@@ -199,38 +195,41 @@ void cloudScatter_3D()
         }
 
         int BufferIndex = 0;
-        float pos_x, pos_y, pos_z;
-      
-  	    for (int y = 0; y < CygLiDARD1::Sensor::Height; y++)
-  	    {
-      		for (int x = 0; x < CygLiDARD1::Sensor::Width; x++)
-  		    {
-                  BufferIndex = x + (CygLiDARD1::Sensor::Width * y);
-                  uint16_t distance = DistanceBuffer[BufferIndex];
-                  if (distance > CygLiDARD1::Distance::Mode3D::Maximum_Depth_3D)  
-                      distance = CygLiDARD1::Distance::Mode3D::Maximum_Depth_3D;
-                  PointCloud3D.calcPointCloud(distance, BufferIndex, pos_x, pos_y, pos_z);
-                  if  ( (y == 0) || (y == CygLiDARD1::Sensor::Height-1) || (x==0) || (x==CygLiDARD1::Sensor::Width-1) )
-                  {
-                    scan_3D.get()->points[BufferIndex].x = std::numeric_limits<float>::quiet_NaN();
-                    scan_3D.get()->points[BufferIndex].y = std::numeric_limits<float>::quiet_NaN();
-                    scan_3D.get()->points[BufferIndex].z = std::numeric_limits<float>::quiet_NaN();
-                    scan_3D.get()->points[BufferIndex].rgb = 0.0;
-                    scan_3D.get()->points[BufferIndex].a = 0;
-                  }
-                  else
-                  {
-                    scan_3D.get()->points[BufferIndex].x = pos_z * MM2M;
-                    scan_3D.get()->points[BufferIndex].y = -pos_x * MM2M;
-                    scan_3D.get()->points[BufferIndex].z = -pos_y * MM2M;
-                    uint32_t rgb_3D = colorArray[((int)pos_y / 2) % colorArray.size()];
-                    scan_3D.get()->points[BufferIndex].rgb = *reinterpret_cast<float*>(&rgb_3D);
-                    scan_3D.get()->points[BufferIndex].a = 255;
-                  }
-   		    }
-  	    }
+        float pos_x, pos_y, pos_z;        
+	    for (int y = 0; y < CygLiDARD1::Sensor::Height; y++)
+	    {
+    		for (int x = 0; x < CygLiDARD1::Sensor::Width; x++)
+		    {
+                BufferIndex = x + (CygLiDARD1::Sensor::Width * y);
+                uint16_t distance = DistanceBuffer[BufferIndex];
 
-        pcl_conversions::toPCL(node->now(), scan_3D->header.stamp);
+                if(distance < CygLiDARD1::Distance::Mode3D::Maximum_Depth_3D)
+                {
+                    if(PointCloud3D.calcPointCloud(distance, BufferIndex, pos_x, pos_y, pos_z) == eCalculationStatus::SUCCESS)
+                    {
+                        scan_3D.get()->points[BufferIndex].x = pos_z * MM2M;
+                        scan_3D.get()->points[BufferIndex].y = -pos_x * MM2M;
+                        scan_3D.get()->points[BufferIndex].z = -pos_y * MM2M;
+                        uint32_t rgb_3D = colorArray[((int)pos_y / 2) % colorArray.size()];
+                        scan_3D.get()->points[BufferIndex].rgb = *reinterpret_cast<float*>(&rgb_3D);
+                        scan_3D.get()->points[BufferIndex].a = 255;
+                    }
+                    else
+                    {
+                        scan_3D.get()->points[BufferIndex].a = 0;
+                    }
+                }
+                else
+                {
+                    scan_3D.get()->points[BufferIndex].a = 0;
+                }
+		    }
+	    }
+
+        // Publish a message on PointCloud2 topic
+        pcl_conversions::toPCL(ros::Time::now(), scan_3D->header.stamp);
+        pub_3D.publish(scan_3D);
+
         // Allow the latest dataset to enter in this constructor
         drawing = false;
     }
@@ -240,35 +239,22 @@ int FREQUENCY_LEVEL, PULSE_DURATION;
 void running()
 {
     // Create node handlers and local variables
-    node = rclcpp::Node::make_shared("line_laser");
+    ros::NodeHandle nh;
+    ros::NodeHandle priv_nh("~");
 
-    node->declare_parameter("port", std::string("/dev/ttyUSB0"));
-    node->declare_parameter("baud_rate", 3000000);
-    node->declare_parameter("frame_id", std::string("laser_link"));
-    node->declare_parameter("run_mode", 2);
-    node->declare_parameter("frequency", 0);
-    node->declare_parameter("set_auto_duration", 0);
-    node->declare_parameter("duration", 10000);
-
-
-    rclcpp::Parameter port_param = node->get_parameter("port");
-    rclcpp::Parameter baud_rate_param = node->get_parameter("baud_rate");
-    rclcpp::Parameter frame_id_param = node->get_parameter("frame_id");
-    rclcpp::Parameter RunMode_param = node->get_parameter("run_mode");
-    rclcpp::Parameter FREQUENCY_LEVEL_param = node->get_parameter("frequency");
-    rclcpp::Parameter setAutoDuration_param = node->get_parameter("set_auto_duration");
-    rclcpp::Parameter PULSE_DURATION_param = node->get_parameter("duration");
-
-    std::string port = port_param.as_string();
-    int baud_rate = baud_rate_param.as_int();
-    std::string frame_id = frame_id_param.as_string();
-    int RunMode = RunMode_param.as_int();
-    int FREQUENCY_LEVEL = FREQUENCY_LEVEL_param.as_int();
-    int setAutoDuration = setAutoDuration_param.as_int();
-    int PULSE_DURATION = PULSE_DURATION_param.as_int();    
+    std::string port;
+    int baud_rate;
+    std::string frame_id;
 
     // Assign the given values by users
-    
+    priv_nh.param("port", port, std::string("/dev/ttyUSB0"));
+    priv_nh.param("baud_rate", baud_rate, 3000000);
+    priv_nh.param("frame_id", frame_id, std::string("laser_link"));
+
+    priv_nh.param("run_mode", RunMode, 0);
+    priv_nh.param("frequency", FREQUENCY_LEVEL, 0);
+    priv_nh.param("set_auto_duration", setAutoDuration, 0);
+    priv_nh.param("duration", PULSE_DURATION, 0);
 
     // injection run mode
     eRunMode LiDAR_RunMode;
@@ -302,16 +288,13 @@ void running()
     }
 
     // Initialize variables
-    //pub_scan = nh.advertise<sensor_msgs::msg::LaserScan>("scan_laser", SCAN_MAX_SIZE);
-    //pub_2D = nh.advertise<sensor_msgs::msg::PointCloud2>("scan_2D", 1);
-    //pub_3D = nh.advertise<sensor_msgs::msg::PointCloud2>("scan_3D", 1);
-    auto pub_scan = node->create_publisher<sensor_msgs::msg::LaserScan>("scan_laser", SCAN_MAX_SIZE);
-    auto pub_2D = node->create_publisher<sensor_msgs::msg::PointCloud2>("scan_2D", 1);
-    auto pub_3D = node->create_publisher<sensor_msgs::msg::PointCloud2>("scan_3D", 1);
+    pub_scan = nh.advertise<sensor_msgs::LaserScan>("scan_laser", SCAN_MAX_SIZE);
+    pub_2D = nh.advertise<sensor_msgs::PointCloud2>("scan_2D", 1);
+    pub_3D = nh.advertise<sensor_msgs::PointCloud2>("scan_3D", 1);
 
     scan_2D = pcl::PointCloud<pcl::PointXYZRGBA>::Ptr(new pcl::PointCloud<pcl::PointXYZRGBA>);
     scan_3D = pcl::PointCloud<pcl::PointXYZRGBA>::Ptr(new pcl::PointCloud<pcl::PointXYZRGBA>);
-    scan_laser = sensor_msgs::msg::LaserScan::Ptr(new sensor_msgs::msg::LaserScan);
+    scan_laser = sensor_msgs::LaserScan::Ptr(new sensor_msgs::LaserScan);
 
     currentBuffer = 0x00;
     drawing = false;
@@ -320,8 +303,8 @@ void running()
     uint8_t result[SCAN_MAX_SIZE];
     uint8_t inProgress = 0x00;
 
-    rclcpp::Time current_time_laser = node->now();
-    rclcpp::Time last_time_laser = node->now();
+    ros::Time current_time_laser = ros::Time::now();
+    ros::Time last_time_laser = ros::Time::now();
 
     bool buffer_setup_2d = false;
     bool buffer_setup_3d = false;
@@ -347,10 +330,9 @@ void running()
 
         // Send packets
         laser.packet_run(LiDAR_RunMode);
-        rclcpp::Rate r(std::chrono::seconds(1));
-        r.sleep();  // sleep for a second
+        ros::Duration(1.0).sleep();         // sleep for a sec, by the duration
         laser.packet_frequency(FREQUENCY_LEVEL);
-        r.sleep();  // sleep for a second
+        ros::Duration(1.0).sleep();
         laser.packet_duration(LiDAR_RunMode, setAutoDuration, PULSE_DURATION);
 
         // Create variables used to organize data before drawing
@@ -358,8 +340,7 @@ void running()
         double ANGLE_STEP_2D;
 
         // Keep receiving data unless the process is dead
-        ROS_INFO("entering service loop");
-        while (rclcpp::ok())
+        while (ros::ok())
         {
             // Only allowed in case of not using the working array called bufferPtr
             if (inProgress == 0x00)
@@ -399,13 +380,9 @@ void running()
                                     }
                                     if (buffer_setup_2d)
                                     {
-                                        last_time_laser = node->now();
+                                        last_time_laser = ros::Time::now();
                                         bufferPtr_2D = &bufferPtr[0];
-                                        sensor_msgs::msg::PointCloud2 pc2_msg_2d_;
                                         cloudScatter_2D(current_time_laser, last_time_laser, ANGLE_STEP_2D);
-                                        pcl::toROSMsg(*scan_2D, pc2_msg_2d_);
-                                        pub_2D->publish(pc2_msg_2d_);
-                                        pub_scan->publish(*scan_laser);
                                     }
                                     break;
                                 case 0x08: // 3D
@@ -434,9 +411,6 @@ void running()
                                                 break;
                                         }
                                         cloudScatter_3D();
-                                        sensor_msgs::msg::PointCloud2 pc2_msg_3d_;
-                                        pcl::toROSMsg(*scan_3D, pc2_msg_3d_);
-                                        pub_3D->publish(pc2_msg_3d_);
                                     }
                                     break;
                                 }
@@ -444,15 +418,13 @@ void running()
                             else
                             {
                                 // passed through header 1
-                                current_time_laser = node->now();
+                                current_time_laser = ros::Time::now();
                             }
                     }
                 }
 				inProgress = 0x00;
             }
-            rclcpp::spin_some(node);
         }
-        ROS_INFO("closing");
         laser.close();
         delete bufferPtr01;
         delete bufferPtr02;
@@ -471,9 +443,7 @@ void running()
 int main(int argc, char **argv)
 {
     // Initialize ROS
-    //ros::init(argc, argv, "line_laser");
-    rclcpp::shutdown();
-    rclcpp::init(argc, argv);
+    ros::init(argc, argv, "line_laser");
 
     std::thread first(running);
     first.join();

@@ -66,29 +66,21 @@ void cyglidar_pcl::packet_duration(const eRunMode mode, const bool setAutoDurati
 {
     if(mode == eRunMode::Mode2D || Duration > Payload::Duration::MaximumDurationValue) 
         return;
-    //uint8_t MSB = (Duration & 0xFF) >> 8;  //Larsvn change to fix pulse duration
-    //uint8_t LSB = Duration & 0xFF;  //Larsvn change to fix pulse duration
-
-    uint8_t MSB = (Duration & 0x3F00) >> 8;  //Larsvn change to fix pulse duration
-    uint8_t LSB = Duration & 0xFF;  //Larsvn change to fix pulse duration
+    uint8_t MSB = (Duration & 0xFF) >> 8;
+    uint8_t LSB = Duration & 0xFF;
 
     // 1st bit, set 3D or Dual 
-    //if(mode == eRunMode::Mode3D) MSB |= (1 << 4);  //Larsvn change to fix pulse duration
-    if(mode == eRunMode::ModeDual) MSB |= (1 << 7);  //Larsvn change to fix pulse duration
+    if(mode == eRunMode::Mode3D) MSB |= (1 << 4);
     // 2nd bit, set Auto or Fixed
-    //if(setAutoDuration == false) MSB |= (1 << 3);  //Larsvn change to fix pulse duration
-    if(setAutoDuration == true) MSB |= (1 << 6);
-    if(setAutoDuration == false) ROS_INFO("AutoDuration on");
-    
+    if(setAutoDuration == false) MSB |= (1 << 3);
+
     // set payload header
     payloadBuffer[0] = Payload::Duration::PayloadHeader::Duration;
 
     // set payload data
     payloadBuffer[1] = LSB;
     payloadBuffer[2] = MSB;
-    ROS_INFO("[%d]",payloadBuffer[0]);
-    ROS_INFO("[%d]",payloadBuffer[1]);
-    ROS_INFO("[%d]",payloadBuffer[2]);
+
     // make packet to CommandBuffer
     makeCommand(CommandBuffer, payloadBuffer, Payload::Duration::PayloadTotalSize);
 
@@ -97,7 +89,7 @@ void cyglidar_pcl::packet_duration(const eRunMode mode, const bool setAutoDurati
 
     // serial write
     boost::asio::write(serial_, boost::asio::buffer(CommandBuffer, CommandTotalSize));
-  	ROS_INFO("PACKET_DURATION HAS BEEN APPLIED [%d]", Duration);
+	ROS_INFO("PACKET_DURATION HAS BEEN APPLIED [%d]", Duration);
     packet_confirmation(CommandBuffer, CommandTotalSize);
 }
 
