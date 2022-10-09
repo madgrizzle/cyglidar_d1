@@ -199,36 +199,36 @@ void cloudScatter_3D()
         }
 
         int BufferIndex = 0;
-        float pos_x, pos_y, pos_z;        
-	    for (int y = 0; y < CygLiDARD1::Sensor::Height; y++)
-	    {
-    		for (int x = 0; x < CygLiDARD1::Sensor::Width; x++)
-		    {
-                BufferIndex = x + (CygLiDARD1::Sensor::Width * y);
-                uint16_t distance = DistanceBuffer[BufferIndex];
-
-                if(distance < CygLiDARD1::Distance::Mode3D::Maximum_Depth_3D)
-                {
-                    if(PointCloud3D.calcPointCloud(distance, BufferIndex, pos_x, pos_y, pos_z) == eCalculationStatus::SUCCESS)
-                    {
-                        scan_3D.get()->points[BufferIndex].x = pos_z * MM2M;
-                        scan_3D.get()->points[BufferIndex].y = -pos_x * MM2M;
-                        scan_3D.get()->points[BufferIndex].z = -pos_y * MM2M;
-                        uint32_t rgb_3D = colorArray[((int)pos_y / 2) % colorArray.size()];
-                        scan_3D.get()->points[BufferIndex].rgb = *reinterpret_cast<float*>(&rgb_3D);
-                        scan_3D.get()->points[BufferIndex].a = 255;
-                    }
-                    else
-                    {
-                        scan_3D.get()->points[BufferIndex].a = 0;
-                    }
-                }
-                else
-                {
+        float pos_x, pos_y, pos_z;
+      
+  	    for (int y = 0; y < CygLiDARD1::Sensor::Height; y++)
+  	    {
+      		for (int x = 0; x < CygLiDARD1::Sensor::Width; x++)
+  		    {
+                  BufferIndex = x + (CygLiDARD1::Sensor::Width * y);
+                  uint16_t distance = DistanceBuffer[BufferIndex];
+                  if (distance > CygLiDARD1::Distance::Mode3D::Maximum_Depth_3D)  
+                      distance = CygLiDARD1::Distance::Mode3D::Maximum_Depth_3D;
+                  PointCloud3D.calcPointCloud(distance, BufferIndex, pos_x, pos_y, pos_z);
+                  if  ( (y == 0) || (y == CygLiDARD1::Sensor::Height-1) || (x==0) || (x==CygLiDARD1::Sensor::Width-1) )
+                  {
+                    scan_3D.get()->points[BufferIndex].x = std::numeric_limits<float>::quiet_NaN();
+                    scan_3D.get()->points[BufferIndex].y = std::numeric_limits<float>::quiet_NaN();
+                    scan_3D.get()->points[BufferIndex].z = std::numeric_limits<float>::quiet_NaN();
+                    scan_3D.get()->points[BufferIndex].rgb = 0.0;
                     scan_3D.get()->points[BufferIndex].a = 0;
-                }
-		    }
-	    }
+                  }
+                  else
+                  {
+                    scan_3D.get()->points[BufferIndex].x = pos_z * MM2M;
+                    scan_3D.get()->points[BufferIndex].y = -pos_x * MM2M;
+                    scan_3D.get()->points[BufferIndex].z = -pos_y * MM2M;
+                    uint32_t rgb_3D = colorArray[((int)pos_y / 2) % colorArray.size()];
+                    scan_3D.get()->points[BufferIndex].rgb = *reinterpret_cast<float*>(&rgb_3D);
+                    scan_3D.get()->points[BufferIndex].a = 255;
+                  }
+   		    }
+  	    }
 
         pcl_conversions::toPCL(node->now(), scan_3D->header.stamp);
         // Allow the latest dataset to enter in this constructor
