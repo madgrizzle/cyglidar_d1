@@ -60,7 +60,7 @@ extern "C" {
 	{
 		uint8_t Header;
 		uint8_t *Data;
-	}Payload;
+	}CygPayload;
 
 	typedef struct CygPacket
 	{
@@ -68,12 +68,12 @@ extern "C" {
 		uint8_t Header2;
 		uint8_t Header3;
 		uint16_t Length;
-		Payload *Payload;
+		CygPayload *Payload;
 		uint8_t Checksum;
 	}Packet;
 
 	uint8_t CygParser(uint8_t *CmdBuff, uint8_t data);
-	uint8_t Make_Packet(uint8_t *CmdBuff, Packet *pk, Payload *pl);
+	uint8_t Make_Packet(uint8_t *CmdBuff, Packet *pk, CygPayload *pl);
 	uint8_t Calc_Checksum(uint8_t *buff, int buffSize);
 
 	//__declspec(dllexport) Payload;

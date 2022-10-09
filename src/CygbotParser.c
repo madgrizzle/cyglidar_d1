@@ -8,7 +8,7 @@ uint8_t CPC;
 enum CMDMode CM = Idle;	//Cmd Mode
 enum PacketCheckList PCL = Header1;	//Packet Check List
 
-void Payload_Parsing(uint8_t *buff, int size, Payload *pl);
+void Payload_Parsing(uint8_t *buff, int size, CygPayload *pl);
 
 inline void Init_Packt(uint8_t data)
 {
@@ -24,7 +24,7 @@ inline void Init_Packt(uint8_t data)
 	}
 }
 
-uint8_t Make_Packet(uint8_t *CmdBuff, Packet *pk, Payload *pl)
+uint8_t Make_Packet(uint8_t *CmdBuff, Packet *pk, CygPayload *pl)
 {
 	uint8_t FirstBit = CmdBuff[POS_CYGBOT_HEADER];
 	uint8_t SecondBit = CmdBuff[POS_DEVICE];
@@ -43,7 +43,7 @@ uint8_t Make_Packet(uint8_t *CmdBuff, Packet *pk, Payload *pl)
 	return TRUE;
 }
 
-void Payload_Parsing(uint8_t *buff, int size, Payload *pl)
+void Payload_Parsing(uint8_t *buff, int size, CygPayload *pl)
 {
 	pl->Header = buff[PAYLOAD_POS_HEADER];
 	pl->Data = &buff[PAYLOAD_POS_DATA];
@@ -82,7 +82,17 @@ uint8_t CygParser(uint8_t *CmdBuff, uint8_t data)
 		}
 		else
 		{
-			Init_Packt(data);
+			//Init_Packt(data);
+			if (data == NORMAL_MODE)
+			{
+				CM = NormalMode;
+				PCL = Header2;
+			}
+			else
+			{
+				CM = Idle;
+				PCL = Header1;
+			}
 		}
 		break;
 	case Header3:
@@ -109,7 +119,17 @@ uint8_t CygParser(uint8_t *CmdBuff, uint8_t data)
 
 		if (PayloadCounter > PayloadSize)
 		{
-			Init_Packt(data);	//packet overflow
+			//Init_Packt(data);	//packet overflow
+			if (data == NORMAL_MODE)
+			{
+				CM = NormalMode;
+				PCL = Header2;
+			}
+			else
+			{
+				CM = Idle;
+				PCL = Header1;
+			}			
 			return FALSE;
 		}
 		if (PayloadSize == PayloadCounter)
@@ -119,7 +139,17 @@ uint8_t CygParser(uint8_t *CmdBuff, uint8_t data)
 		}
 		break;
 	case CheckSum:
-		Init_Packt(0);
+		//Init_Packt(0);
+		if (0 == NORMAL_MODE)
+		{
+			CM = NormalMode;
+			PCL = Header2;
+		}
+		else
+		{
+			CM = Idle;
+			PCL = Header1;
+		}		
 		CPC = Calc_Checksum(CmdBuff, PayloadSize + 6);		//Calculated Packet Checksum
 		if (CPC == data)
 		{
@@ -128,7 +158,18 @@ uint8_t CygParser(uint8_t *CmdBuff, uint8_t data)
 		}
 		break;
 	default:
-		Init_Packt(0);
+		//Init_Packt(0);
+		if (0 == NORMAL_MODE)
+		{
+			CM = NormalMode;
+			PCL = Header2;
+		}
+		else
+		{
+			CM = Idle;
+			PCL = Header1;
+		}
+
 		break;
 	}
 	return FALSE;
